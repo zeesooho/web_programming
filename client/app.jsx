@@ -1,199 +1,56 @@
-'use strict';
+import React, { useState } from 'react';
+import * as ReactDOM from 'react-dom/client';
+import { ChatPage } from './chat/chat_page.jsx';
+import { LoginPage } from './login/login_page.jsx';
+import 'regenerator-runtime/runtime'
 
-var React = require('react');
 
-var socket = io.connect();
+function App() {
+	const [user, setUser] = useState(null);
+	const [loginPageError, setLoginPageError] = useState('');
 
-var UsersList = React.createClass({
-	render() {
-		return (
-			<div className='users'>
-				<h3> 참여자들 </h3>
-				<ul>
-					{
-						this.props.users.map((user, i) => {
-							return (
-								<li key={i}>
-									{user}
-								</li>
-							);
-						})
-					}
-				</ul>				
-			</div>
-		);
-	}
-});
-
-var Message = React.createClass({
-	render() {
-		return (
-			<div className="message">
-				<strong>{this.props.user} :</strong> 
-				<span>{this.props.text}</span>		
-			</div>
-		);
-	}
-});
-
-var MessageList = React.createClass({
-	render() {
-		return (
-			<div className='messages'>
-				<h2> 채팅방 </h2>
-				{
-					this.props.messages.map((message, i) => {
-						return (
-							<Message
-								key={i}
-								user={message.user}
-								text={message.text} 
-							/>
-						);
-					})
-				} 
-			</div>
-		);
-	}
-});
-
-var MessageForm = React.createClass({
-
-	getInitialState() {
-		return {text: ''};
-	},
-
-	handleSubmit(e) {
-		e.preventDefault();
-		var message = {
-			user : this.props.user,
-			text : this.state.text
-		}
-		this.props.onMessageSubmit(message);	
-		this.setState({ text: '' });
-	},
-
-	changeHandler(e) {
-		this.setState({ text : e.target.value });
-	},
-
-	render() {
-		return(
-			<div className='message_form'>
-				<form onSubmit={this.handleSubmit}>
-					<input
-						placeholder='메시지 입력'
-						className='textinput'
-						onChange={this.changeHandler}
-						value={this.state.text}
-					/>
-					<h3></h3>
-				</form>
-			</div>
-		);
-	}
-});
-
-var ChangeNameForm = React.createClass({
-	getInitialState() {
-		return {newName: ''};
-	},
-
-	onKey(e) {
-		this.setState({ newName : e.target.value });
-	},
-
-	handleSubmit(e) {
-		e.preventDefault();
-		var newName = this.state.newName;
-		this.props.onChangeName(newName);	
-		this.setState({ newName: '' });
-	},
-
-	render() {
-		return(
-			<div className='change_name_form'>
-				<h3> 아이디 변경 </h3>
-				<form onSubmit={this.handleSubmit}>
-					<input
-						placeholder='변경할 아이디 입력'
-						onChange={this.onKey}
-						value={this.state.newName} 
-					/>
-				</form>	
-			</div>
-		);
-	}
-});
-
-var ChatApp = React.createClass({
-
-	getInitialState() {
-		return {users: [], messages:[], text: ''};
-	},
-
-	componentDidMount() {
-		socket.on('init', this._initialize);
-		socket.on('send:message', this._messageRecieve);
-		socket.on('user:join', this._userJoined);
-		socket.on('user:left', this._userLeft);
-		socket.on('change:name', this._userChangedName);
-	},
-
-	_initialize(data) {
-		var {users, name} = data;
-		this.setState({users, user: name});
-	},
-
-	_messageRecieve(message) {
-		var {messages} = this.state;
-		messages.push(message);
-		this.setState({messages});
-	},
-
-	handleMessageSubmit(message) {
-		var {messages} = this.state;
-		messages.push(message);
-		this.setState({messages});
-		socket.emit('send:message', message);
-	},
-
-	handleChangeName(newName) {
-		var oldName = this.state.user;
-		socket.emit('change:name', { name : newName}, (result) => {
-			if(!result) {
-				return alert('There was an error changing your name');
+	const handleLoginSubmit = async (username, password) => {
+		try {
+			const response = await fetch('/api/auth/login', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ username, password })
+			});
+			const data = await response.json();
+			if (response.ok) {
+				setLoginPageError('');
+				setUser(username);
+			} else {
+				setLoginPageError(data.error);
 			}
-			var {users} = this.state;
-			var index = users.indexOf(oldName);
-			users.splice(index, 1, newName);
-			this.setState({users, user: newName});
-		});
-	},
+		} catch (err) {
+			alert('서버 오류가 발생했습니다.');
+			setLoginPageError('서버 오류가 발생했습니다.');
+		}
+	};
 
-	render() {
-		return (
-			<div>
-			<div className='center'>
-			<UsersList
-				users={this.state.users}
-			/>
-			<ChangeNameForm
-				onChangeName={this.handleChangeName}
-			/>
-			{/* <div> */}
-				<MessageList
-					messages={this.state.messages}
-				/>
-				<MessageForm
-					onMessageSubmit={this.handleMessageSubmit}
-					user={this.state.user}
-				/>
-			{/* </div> */}
-			</div>
-			</div>
-		);
+	const handleLogoutSubmit = () => {
+		setUser(null);
 	}
-});
 
-React.render(<ChatApp/>, document.getElementById('app'));
+	return (
+		<div className='app-container'>
+			{!user ? (
+				<LoginPage
+					onLoginSubmit={handleLoginSubmit}
+					error={loginPageError}
+				/>
+			) : (
+				<ChatPage
+					initUser={user}
+					onLogoutSubmit={handleLogoutSubmit}
+				/>
+			)}
+		</div>
+	);
+}
+
+const root = ReactDOM.createRoot(document.getElementById('app'));
+root.render(<App />);

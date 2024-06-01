@@ -6,8 +6,10 @@
 
 var express = require('express');
 var http = require('http');
-
-var socket = require('./routes/socket.js');
+var bodyParser = require('body-parser'); 
+var socket = require('./modules/socket.js');
+var auth = require('./routes/auth.js');
+var room = require('./routes/room.js');
 
 var app = express();
 var server = http.createServer(app);
@@ -17,9 +19,15 @@ app.set('views', __dirname + '/views');
 app.use(express.static(__dirname + '/public'));
 app.set('port', 3000);
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 if (process.env.NODE_ENV === 'development') {
 	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 }
+
+app.use('/api/auth', auth);
+app.use('/api/room', room);
 
 /* Socket.io Communication */
 var io = require('socket.io').listen(server);
