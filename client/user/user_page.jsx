@@ -1,54 +1,51 @@
-import React from 'react';
-import socket from '../socket.jsx';
+import React, { useState, useEffect } from 'react';
 
-export function UsersList({ users }) {
+export function UserPage({ initUser, socket }) {
     const [users, setUsers] = useState([]);
+    const [user, setUser] = useState(initUser);
+
+    const userLeft = (data) => {
+        setUsers((prevUsers) => prevUsers.filter((username) => username !== data.name));
+    };
+
+    const userJoined = (data) => {
+        setUsers((prevUsers) => [...prevUsers, data.name]);
+    };
 
     useEffect(() => {
-        socket.on('user:join', _userJoined);
-        socket.on('user:left', _userLeft);
-        // socket.on('change:name', _userChangedName);
+        socket.emit('getUsers');
+        socket.on('users', (userList) => {
+            setUsers(userList);
+        });
+
+        socket.on('user:join', userJoined);
+        socket.on('user:left', userLeft);
 
         return () => {
-            socket.disconnect();
-            socket.off('user:join', _userJoined);
-            socket.off('user:left', _userLeft);
-            // socket.off('change:name', _userChangedName);
+            socket.off('user:join', userJoined);
+            socket.off('user:left', userLeft);
+            socket.off('users', (userList) => {
+                setUsers(userList);
+            });
         };
-    }, []);
-
-    const _userLeft = (data) => {
-        const index = users.indexOf(data.name);
-        const updatedUsers = [...users];
-        updatedUsers.splice(index, 1);
-        setUsers(updatedUsers);
-    }
-
-
-    const _userJoined = (data) => {
-        setUsers(prevUsers => [...prevUsers, data.name]);
-    }
+    }, [socket]);
 
     const handleChangeName = (newName) => {
-        const oldName = user;
         socket.emit('change:name', { name: newName }, (result) => {
             if (!result) {
                 return alert('There was an error changing your name');
             }
-            const index = users.indexOf(oldName);
-            const updatedUsers = [...users];
-            updatedUsers.splice(index, 1, newName);
-            setUsers(updatedUsers);
+            setUsers((prevUsers) => prevUsers.map((username) => (username === user ? newName : username)));
             setUser(newName);
         });
     };
 
     return (
-        <div className='users'>
+        <div className='users-page'>
             <h3>참여자들</h3>
-            <ul>
-                {users.map((user, index) => (
-                    <li key={index}>{user}</li>
+            <ul className='user-list'>
+                {users.map((username, index) => (
+                    <li key={index}>{username}</li>
                 ))}
             </ul>
         </div>

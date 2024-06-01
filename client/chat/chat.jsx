@@ -1,5 +1,3 @@
-import { ChangeNameForm } from "./components/change_name_form.jsx";
-import { MessageForm } from "./components/message_form.jsx";
-import { MessageList } from "./components/message_list.jsx";
-
-export { ChangeNameForm, MessageForm, MessageList };
+export { ChangeNameForm } from './components/change_name_form.jsx';
+export { MessageForm } from './components/message_form.jsx';
+export { MessageList } from './components/message_list.jsx';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import 'regenerator-runtime/runtime'
+import 'regenerator-runtime/runtime';
 
 export function LoginPage({ onLoginSubmit, error }) {
     const [username, setUsername] = useState('');
@@ -48,8 +48,7 @@ export function LoginPage({ onLoginSubmit, error }) {
                 setLocalError(err.message);
             }
         }
-    }
-
+    };
 
     return (
         <div className="login-container">
@@ -79,5 +78,4 @@ export function LoginPage({ onLoginSubmit, error }) {
             </form>
         </div>
     );
-
-};
+}

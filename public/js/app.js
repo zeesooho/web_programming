@@ -19,6 +19,12 @@ var _chatChat_pageJsx = require('./chat/chat_page.jsx');
 
 var _loginLogin_pageJsx = require('./login/login_page.jsx');
 
+var _userUser_pageJsx = require('./user/user_page.jsx');
+
+var _socketIoClient = require('socket.io-client');
+
+var _socketIoClient2 = _interopRequireDefault(_socketIoClient);
+
 require('regenerator-runtime/runtime');
 
 function App() {
@@ -31,12 +37,48 @@ function App() {
 	var user = _useState2[0];
 	var setUser = _useState2[1];
 
-	var _useState3 = (0, _react.useState)('');
+	var _useState3 = (0, _react.useState)('login');
 
 	var _useState32 = _slicedToArray(_useState3, 2);
 
-	var loginPageError = _useState32[0];
-	var setLoginPageError = _useState32[1];
+	var currentPage = _useState32[0];
+	var setCurrentPage = _useState32[1];
+
+	var _useState4 = (0, _react.useState)('');
+
+	var _useState42 = _slicedToArray(_useState4, 2);
+
+	var loginPageError = _useState42[0];
+	var setLoginPageError = _useState42[1];
+
+	var _useState5 = (0, _react.useState)(null);
+
+	var _useState52 = _slicedToArray(_useState5, 2);
+
+	var socket = _useState52[0];
+	var setSocket = _useState52[1];
+
+	(0, _react.useEffect)(function () {
+		if (user) {
+			var _ret = (function () {
+				var newSocket = (0, _socketIoClient2['default'])({
+					autoConnect: false
+				});
+				newSocket.connect();
+				newSocket.emit('login', { username: user });
+				setSocket(newSocket);
+
+				return {
+					v: function () {
+						newSocket.disconnect();
+						setSocket(null);
+					}
+				};
+			})();
+
+			if (typeof _ret === 'object') return _ret.v;
+		}
+	}, [user]);
 
 	var handleLoginSubmit = function handleLoginSubmit(username, password) {
 		var response, data;
@@ -64,6 +106,7 @@ function App() {
 					if (response.ok) {
 						setLoginPageError('');
 						setUser(username);
+						setCurrentPage('chat');
 					} else {
 						setLoginPageError(data.error);
 					}
@@ -85,41 +128,111 @@ function App() {
 	};
 
 	var handleLogoutSubmit = function handleLogoutSubmit() {
+		if (socket) {
+			socket.disconnect();
+			setSocket(null);
+		}
 		setUser(null);
+		setCurrentPage('login');
+	};
+
+	var navigateTo = function navigateTo(page) {
+		setCurrentPage(page);
 	};
 
 	return _react2['default'].createElement(
 		'div',
 		{ className: 'app-container' },
-		!user ? _react2['default'].createElement(_loginLogin_pageJsx.LoginPage, {
-			onLoginSubmit: handleLoginSubmit,
-			error: loginPageError
-		}) : _react2['default'].createElement(_chatChat_pageJsx.ChatPage, {
-			initUser: user,
-			onLogoutSubmit: handleLogoutSubmit
-		})
+		user && _react2['default'].createElement(
+			'nav',
+			{ className: 'nav-bar' },
+			_react2['default'].createElement(
+				'ul',
+				null,
+				_react2['default'].createElement(
+					'li',
+					{ className: currentPage === 'chat' ? 'active' : '' },
+					_react2['default'].createElement(
+						'button',
+						{ onClick: function () {
+								return navigateTo('chat');
+							} },
+						'Chat'
+					)
+				),
+				_react2['default'].createElement(
+					'li',
+					{ className: currentPage === 'user' ? 'active' : '' },
+					_react2['default'].createElement(
+						'button',
+						{ onClick: function () {
+								return navigateTo('user');
+							} },
+						'User'
+					)
+				),
+				_react2['default'].createElement(
+					'li',
+					null,
+					_react2['default'].createElement(
+						'button',
+						{ onClick: handleLogoutSubmit },
+						'Logout'
+					)
+				)
+			)
+		),
+		_react2['default'].createElement(
+			'div',
+			null,
+			currentPage === 'login' && _react2['default'].createElement(_loginLogin_pageJsx.LoginPage, { onLoginSubmit: handleLoginSubmit, error: loginPageError }),
+			currentPage === 'chat' && user && socket && _react2['default'].createElement(_chatChat_pageJsx.ChatPage, { initUser: user, socket: socket }),
+			currentPage === 'user' && user && socket && _react2['default'].createElement(_userUser_pageJsx.UserPage, { initUser: user, socket: socket }),
+			currentPage !== 'login' && (!socket || !user) && _react2['default'].createElement(
+				'div',
+				null,
+				'Loading...'
+			)
+		)
 	);
 }
 
 var root = ReactDOM.createRoot(document.getElementById('app'));
 root.render(_react2['default'].createElement(App, null));
 
-},{"./chat/chat_page.jsx":3,"./login/login_page.jsx":7,"react":47,"react-dom/client":43,"regenerator-runtime/runtime":48}],2:[function(require,module,exports){
-"use strict";
+},{"./chat/chat_page.jsx":3,"./login/login_page.jsx":7,"./user/user_page.jsx":8,"react":47,"react-dom/client":43,"regenerator-runtime/runtime":48,"socket.io-client":52}],2:[function(require,module,exports){
+'use strict';
 
-Object.defineProperty(exports, "__esModule", {
+Object.defineProperty(exports, '__esModule', {
   value: true
 });
 
-var _componentsChange_name_formJsx = require("./components/change_name_form.jsx");
+var _componentsChange_name_formJsx = require('./components/change_name_form.jsx');
 
-var _componentsMessage_formJsx = require("./components/message_form.jsx");
+Object.defineProperty(exports, 'ChangeNameForm', {
+  enumerable: true,
+  get: function get() {
+    return _componentsChange_name_formJsx.ChangeNameForm;
+  }
+});
 
-var _componentsMessage_listJsx = require("./components/message_list.jsx");
+var _componentsMessage_formJsx = require('./components/message_form.jsx');
 
-exports.ChangeNameForm = _componentsChange_name_formJsx.ChangeNameForm;
-exports.MessageForm = _componentsMessage_formJsx.MessageForm;
-exports.MessageList = _componentsMessage_listJsx.MessageList;
+Object.defineProperty(exports, 'MessageForm', {
+  enumerable: true,
+  get: function get() {
+    return _componentsMessage_formJsx.MessageForm;
+  }
+});
+
+var _componentsMessage_listJsx = require('./components/message_list.jsx');
+
+Object.defineProperty(exports, 'MessageList', {
+  enumerable: true,
+  get: function get() {
+    return _componentsMessage_listJsx.MessageList;
+  }
+});
 
 },{"./components/change_name_form.jsx":4,"./components/message_form.jsx":5,"./components/message_list.jsx":6}],3:[function(require,module,exports){
 'use strict';
@@ -142,13 +255,11 @@ var _react2 = _interopRequireDefault(_react);
 
 var _chatJsx = require('./chat.jsx');
 
-var _socketJsx = require('../socket.jsx');
-
-var _socketJsx2 = _interopRequireDefault(_socketJsx);
-
 function ChatPage(_ref) {
-    var onLogoutSubmit = _ref.onLogoutSubmit;
+    var _this = this;
+
     var initUser = _ref.initUser;
+    var socket = _ref.socket;
 
     var _useState = (0, _react.useState)([]);
 
@@ -164,75 +275,207 @@ function ChatPage(_ref) {
     var user = _useState32[0];
     var setUser = _useState32[1];
 
+    var _useState4 = (0, _react.useState)([]);
+
+    var _useState42 = _slicedToArray(_useState4, 2);
+
+    var rooms = _useState42[0];
+    var setRooms = _useState42[1];
+
+    var _useState5 = (0, _react.useState)('');
+
+    var _useState52 = _slicedToArray(_useState5, 2);
+
+    var currentRoom = _useState52[0];
+    var setCurrentRoom = _useState52[1];
+
+    var _useState6 = (0, _react.useState)('');
+
+    var _useState62 = _slicedToArray(_useState6, 2);
+
+    var searchRoom = _useState62[0];
+    var setSearchRoom = _useState62[1];
+
+    var _useState7 = (0, _react.useState)(true);
+
+    var _useState72 = _slicedToArray(_useState7, 2);
+
+    var roomExists = _useState72[0];
+    var setRoomExists = _useState72[1];
+
+    var initialize = function initialize(data) {
+        setUser(data.name);
+    };
+
+    var messageReceive = function messageReceive(message) {
+        setMessages(function (prevMessages) {
+            return [].concat(_toConsumableArray(prevMessages), [message]);
+        });
+    };
+
+    var fetchRooms = function fetchRooms() {
+        var response, data;
+        return regeneratorRuntime.async(function fetchRooms$(context$2$0) {
+            while (1) switch (context$2$0.prev = context$2$0.next) {
+                case 0:
+                    context$2$0.prev = 0;
+                    context$2$0.next = 3;
+                    return regeneratorRuntime.awrap(fetch('/api/room/rooms'));
+
+                case 3:
+                    response = context$2$0.sent;
+                    context$2$0.next = 6;
+                    return regeneratorRuntime.awrap(response.json());
+
+                case 6:
+                    data = context$2$0.sent;
+
+                    setRooms(data.rooms);
+                    context$2$0.next = 13;
+                    break;
+
+                case 10:
+                    context$2$0.prev = 10;
+                    context$2$0.t0 = context$2$0['catch'](0);
+
+                    console.error('Error fetching rooms:', context$2$0.t0);
+
+                case 13:
+                case 'end':
+                    return context$2$0.stop();
+            }
+        }, null, _this, [[0, 10]]);
+    };
+
     (0, _react.useEffect)(function () {
-        _socketJsx2['default'].emit('login', { username: user });
-        _socketJsx2['default'].on('init', _initialize);
-        _socketJsx2['default'].on('send:message', _messageReceive);
-        // socket.on('change:name', _userChangedName);
+        socket.on('init', initialize);
+        socket.on('send:message', messageReceive);
+        socket.on('room:joined', function (data) {
+            setMessages(data.messages);
+        });
+
+        fetchRooms();
 
         return function () {
-            _socketJsx2['default'].disconnect();
-            _socketJsx2['default'].off('init', _initialize);
-            _socketJsx2['default'].off('send:message', _messageReceive);
-            // socket.off('change:name', _userChangedName);
+            socket.off('init', initialize);
+            socket.off('send:message', messageReceive);
+            socket.off('room:joined');
         };
-    }, []);
-
-    var _initialize = function _initialize(data) {
-        setUser(data.name);
-        setUsers(data.users);
-    };
-
-    var _messageReceive = function _messageReceive(message) {
-        setMessages(function (prevMessages) {
-            return [].concat(_toConsumableArray(prevMessages), [message]);
-        });
-    };
+    }, [socket]);
 
     var handleMessageSubmit = function handleMessageSubmit(message) {
+        var newMessage = { user: user, text: message, time: Date.now() };
         setMessages(function (prevMessages) {
-            return [].concat(_toConsumableArray(prevMessages), [message]);
+            return [].concat(_toConsumableArray(prevMessages), [newMessage]);
         });
-        _socketJsx2['default'].emit('send:message', message);
+        socket.emit('send:message', { room: currentRoom, text: message, time: newMessage.time });
     };
 
-    var handleChangeName = function handleChangeName(newName) {
-        var oldName = user;
-        _socketJsx2['default'].emit('change:name', { name: newName }, function (result) {
-            if (!result) {
-                return alert('There was an error changing your name');
-            }
-            var index = users.indexOf(oldName);
-            var updatedUsers = [].concat(_toConsumableArray(users));
-            updatedUsers.splice(index, 1, newName);
-            setUsers(updatedUsers);
-            setUser(newName);
-        });
+    var handleJoinRoom = function handleJoinRoom(room) {
+        setMessages([]);
+        setCurrentRoom(room);
+        socket.emit('room:join', { room: room });
     };
 
-    var handleLogoutSubmit = function handleLogoutSubmit() {
-        onLogoutSubmit();
+    var handleSearchRoom = function handleSearchRoom() {
+        if (rooms.includes(searchRoom)) {
+            setRoomExists(true);
+            handleJoinRoom(searchRoom);
+        } else {
+            setRoomExists(false);
+        }
+    };
+
+    var handleCreateRoom = function handleCreateRoom() {
+        if (searchRoom && !rooms.includes(searchRoom)) {
+            setRooms([].concat(_toConsumableArray(rooms), [searchRoom]));
+            handleJoinRoom(searchRoom);
+            setSearchRoom('');
+            setRoomExists(true);
+        }
     };
 
     return _react2['default'].createElement(
         'div',
-        null,
+        { className: 'chat-page' },
         _react2['default'].createElement(
             'div',
-            { className: 'center' },
-            _react2['default'].createElement(_chatJsx.ChangeNameForm, { onChangeName: handleChangeName }),
-            _react2['default'].createElement(_chatJsx.MessageList, { messages: messages, user: user }),
-            _react2['default'].createElement(_chatJsx.MessageForm, { onMessageSubmit: handleMessageSubmit, user: user }),
+            { className: 'sidebar' },
             _react2['default'].createElement(
-                'button',
-                { type: 'button', onClick: handleLogoutSubmit },
-                '로그아웃'
+                'div',
+                { className: 'search-bar' },
+                _react2['default'].createElement('input', {
+                    type: 'text',
+                    value: searchRoom,
+                    onChange: function (e) {
+                        return setSearchRoom(e.target.value);
+                    },
+                    placeholder: '찾을 방'
+                }),
+                _react2['default'].createElement(
+                    'button',
+                    { onClick: handleSearchRoom },
+                    '🔍'
+                )
+            ),
+            !roomExists && _react2['default'].createElement(
+                'div',
+                { className: 'room-not-found' },
+                _react2['default'].createElement(
+                    'p',
+                    null,
+                    '해당 방이 존재하지 않습니다. 방을 개설하시겠습니까?'
+                ),
+                _react2['default'].createElement(
+                    'button',
+                    { onClick: handleCreateRoom },
+                    'O'
+                ),
+                _react2['default'].createElement(
+                    'button',
+                    { onClick: function () {
+                            return setRoomExists(true);
+                        } },
+                    'X'
+                )
+            ),
+            _react2['default'].createElement(
+                'ul',
+                { className: 'room-list' },
+                rooms.map(function (room, index) {
+                    return _react2['default'].createElement(
+                        'li',
+                        { key: index },
+                        _react2['default'].createElement(
+                            'button',
+                            { onClick: function () {
+                                    return handleJoinRoom(room);
+                                } },
+                            room
+                        )
+                    );
+                })
+            )
+        ),
+        _react2['default'].createElement(
+            'div',
+            { className: 'chat-container' },
+            _react2['default'].createElement(
+                _react2['default'].Fragment,
+                null,
+                _react2['default'].createElement(
+                    'h3',
+                    null,
+                    currentRoom ? currentRoom : "채팅방을 선택하세요"
+                ),
+                _react2['default'].createElement(_chatJsx.MessageList, { messages: messages, currentUser: user }),
+                _react2['default'].createElement(_chatJsx.MessageForm, { onMessageSubmit: handleMessageSubmit, user: user, disabled: !currentRoom })
             )
         )
     );
 }
 
-},{"../socket.jsx":8,"./chat.jsx":2,"react":47}],4:[function(require,module,exports){
+},{"./chat.jsx":2,"react":47}],4:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -317,38 +560,37 @@ var _react2 = _interopRequireDefault(_react);
 function MessageForm(_ref) {
     var onMessageSubmit = _ref.onMessageSubmit;
     var user = _ref.user;
+    var disabled = _ref.disabled;
 
     var _useState = (0, _react.useState)('');
 
     var _useState2 = _slicedToArray(_useState, 2);
 
-    var text = _useState2[0];
-    var setText = _useState2[1];
+    var message = _useState2[0];
+    var setMessage = _useState2[1];
 
     var handleSubmit = function handleSubmit(e) {
         e.preventDefault();
-        var message = { user: user, text: text };
         onMessageSubmit(message);
-        setText(''); // 메시지 전송 후 입력 필드 초기화
-    };
-
-    var changeHandler = function changeHandler(e) {
-        setText(e.target.value); // 입력 값에 따라 text 상태 업데이트
+        setMessage('');
     };
 
     return _react2['default'].createElement(
-        'div',
-        { className: 'message_form' },
+        'form',
+        { onSubmit: handleSubmit, className: 'message_form' },
+        _react2['default'].createElement('input', {
+            type: 'text',
+            value: message,
+            onChange: function (e) {
+                return setMessage(e.target.value);
+            },
+            placeholder: '메시지를 입력하세요',
+            disabled: disabled
+        }),
         _react2['default'].createElement(
-            'form',
-            { onSubmit: handleSubmit },
-            _react2['default'].createElement('input', {
-                type: 'text',
-                placeholder: '메시지 입력',
-                className: 'textinput',
-                onChange: changeHandler,
-                value: text
-            })
+            'button',
+            { type: 'submit', disabled: disabled || !message },
+            'Send'
         )
     );
 }
@@ -370,40 +612,48 @@ var _react2 = _interopRequireDefault(_react);
 function Message(_ref) {
     var user = _ref.user;
     var text = _ref.text;
+    var time = _ref.time;
+    var isOwnMessage = _ref.isOwnMessage;
 
     return _react2['default'].createElement(
         'div',
-        { className: 'message' },
+        { className: 'message ' + (isOwnMessage ? 'own-message' : 'other-message') },
         _react2['default'].createElement(
-            'strong',
-            null,
-            user,
-            ' :'
-        ),
-        _react2['default'].createElement(
-            'span',
-            null,
-            text
+            'div',
+            { className: 'message-content' },
+            _react2['default'].createElement(
+                'strong',
+                null,
+                user
+            ),
+            _react2['default'].createElement(
+                'div',
+                { className: 'message-text' },
+                text
+            ),
+            _react2['default'].createElement(
+                'span',
+                { className: 'message-time' },
+                new Date(time).toLocaleTimeString()
+            )
         )
     );
 }
 
 function MessageList(_ref2) {
     var messages = _ref2.messages;
+    var currentUser = _ref2.currentUser;
 
     return _react2['default'].createElement(
         'div',
         { className: 'messages' },
-        _react2['default'].createElement(
-            'h2',
-            null,
-            '채팅방'
-        ),
         messages.map(function (message, index) {
             return _react2['default'].createElement(Message, {
                 key: index,
                 user: message.user,
-                text: message.text
+                text: message.text,
+                time: message.time,
+                isOwnMessage: message.user === currentUser
             });
         })
     );
@@ -582,27 +832,112 @@ function LoginPage(_ref) {
     );
 }
 
-;
-
 },{"react":47,"regenerator-runtime/runtime":48}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
-  value: true
+    value: true
 });
+
+var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i['return']) _i['return'](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError('Invalid attempt to destructure non-iterable instance'); } }; })();
+
+exports.UserPage = UserPage;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-var _socketIoClient = require('socket.io-client');
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
 
-var _socketIoClient2 = _interopRequireDefault(_socketIoClient);
+var _react = require('react');
 
-var socket = _socketIoClient2['default'].connect();
+var _react2 = _interopRequireDefault(_react);
 
-exports['default'] = socket;
-module.exports = exports['default'];
+function UserPage(_ref) {
+    var initUser = _ref.initUser;
+    var socket = _ref.socket;
 
-},{"socket.io-client":52}],9:[function(require,module,exports){
+    var _useState = (0, _react.useState)([]);
+
+    var _useState2 = _slicedToArray(_useState, 2);
+
+    var users = _useState2[0];
+    var setUsers = _useState2[1];
+
+    var _useState3 = (0, _react.useState)(initUser);
+
+    var _useState32 = _slicedToArray(_useState3, 2);
+
+    var user = _useState32[0];
+    var setUser = _useState32[1];
+
+    var userLeft = function userLeft(data) {
+        setUsers(function (prevUsers) {
+            return prevUsers.filter(function (username) {
+                return username !== data.name;
+            });
+        });
+    };
+
+    var userJoined = function userJoined(data) {
+        setUsers(function (prevUsers) {
+            return [].concat(_toConsumableArray(prevUsers), [data.name]);
+        });
+    };
+
+    (0, _react.useEffect)(function () {
+        socket.emit('getUsers');
+        socket.on('users', function (userList) {
+            setUsers(userList);
+        });
+
+        socket.on('user:join', userJoined);
+        socket.on('user:left', userLeft);
+
+        return function () {
+            socket.off('user:join', userJoined);
+            socket.off('user:left', userLeft);
+            socket.off('users', function (userList) {
+                setUsers(userList);
+            });
+        };
+    }, [socket]);
+
+    var handleChangeName = function handleChangeName(newName) {
+        socket.emit('change:name', { name: newName }, function (result) {
+            if (!result) {
+                return alert('There was an error changing your name');
+            }
+            setUsers(function (prevUsers) {
+                return prevUsers.map(function (username) {
+                    return username === user ? newName : username;
+                });
+            });
+            setUser(newName);
+        });
+    };
+
+    return _react2['default'].createElement(
+        'div',
+        { className: 'users-page' },
+        _react2['default'].createElement(
+            'h3',
+            null,
+            '참여자들'
+        ),
+        _react2['default'].createElement(
+            'ul',
+            { className: 'user-list' },
+            users.map(function (username, index) {
+                return _react2['default'].createElement(
+                    'li',
+                    { key: index },
+                    username
+                );
+            })
+        )
+    );
+}
+
+},{"react":47}],9:[function(require,module,exports){
 module.exports = after
 
 function after(count, callback, err_cb) {

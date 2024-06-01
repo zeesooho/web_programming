@@ -1,64 +1,111 @@
 import React, { useState, useEffect } from 'react';
-import { ChangeNameForm, MessageForm, MessageList } from './chat.jsx';
-import socket from '../socket.jsx';
+import { MessageForm, MessageList } from './chat.jsx';
 
-export function ChatPage({ onLogoutSubmit, initUser }) {
+export function ChatPage({ initUser, socket }) {
     const [messages, setMessages] = useState([]);
     const [user, setUser] = useState(initUser);
+    const [rooms, setRooms] = useState([]);
+    const [currentRoom, setCurrentRoom] = useState('');
+    const [searchRoom, setSearchRoom] = useState('');
+    const [roomExists, setRoomExists] = useState(true);
+
+    const initialize = (data) => {
+        setUser(data.name);
+    };
+
+    const messageReceive = (message) => {
+        setMessages(prevMessages => [...prevMessages, message]);
+    };
+
+    const fetchRooms = async () => {
+        try {
+            const response = await fetch('/api/room/rooms');
+            const data = await response.json();
+            setRooms(data.rooms);
+        } catch (error) {
+            console.error('Error fetching rooms:', error);
+        }
+    };
 
     useEffect(() => {
-        socket.emit('login', { username: user });
-        socket.on('init', _initialize);
-        socket.on('send:message', _messageReceive);
-        // socket.on('change:name', _userChangedName);
+        socket.on('init', initialize);
+        socket.on('send:message', messageReceive);
+        socket.on('room:joined', (data) => {
+            setMessages(data.messages);
+        });
+
+        fetchRooms();
 
         return () => {
-            socket.disconnect();
-            socket.off('init', _initialize);
-            socket.off('send:message', _messageReceive);
-            // socket.off('change:name', _userChangedName);
+            socket.off('init', initialize);
+            socket.off('send:message', messageReceive);
+            socket.off('room:joined');
         };
-    }, []);
-
-    const _initialize = (data) => {
-        setUser(data.name);
-        setUsers(data.users);
-    };
-
-    const _messageReceive = (message) => {
-        setMessages(prevMessages => [...prevMessages, message]);
-    };
+    }, [socket]);
 
     const handleMessageSubmit = (message) => {
-        setMessages(prevMessages => [...prevMessages, message]);
-        socket.emit('send:message', message);
+        const newMessage = { user, text: message, time: Date.now() };
+        setMessages(prevMessages => [...prevMessages, newMessage]);
+        socket.emit('send:message', { room: currentRoom, text: message, time: newMessage.time });
     };
 
-    const handleChangeName = (newName) => {
-        const oldName = user;
-        socket.emit('change:name', { name: newName }, (result) => {
-            if (!result) {
-                return alert('There was an error changing your name');
-            }
-            const index = users.indexOf(oldName);
-            const updatedUsers = [...users];
-            updatedUsers.splice(index, 1, newName);
-            setUsers(updatedUsers);
-            setUser(newName);
-        });
+    const handleJoinRoom = (room) => {
+        setMessages([]);
+        setCurrentRoom(room);
+        socket.emit('room:join', { room });
     };
 
-    const handleLogoutSubmit = () => {
-        onLogoutSubmit();
-    }
+    const handleSearchRoom = () => {
+        if (rooms.includes(searchRoom)) {
+            setRoomExists(true);
+            handleJoinRoom(searchRoom);
+        } else {
+            setRoomExists(false);
+        }
+    };
+
+    const handleCreateRoom = () => {
+        if (searchRoom && !rooms.includes(searchRoom)) {
+            setRooms([...rooms, searchRoom]);
+            handleJoinRoom(searchRoom);
+            setSearchRoom('');
+            setRoomExists(true);
+        }
+    };
 
     return (
-        <div>
-            <div className='center'>
-                <ChangeNameForm onChangeName={handleChangeName} />
-                <MessageList messages={messages} user={user} />
-                <MessageForm onMessageSubmit={handleMessageSubmit} user={user} />
-                <button type='button' onClick={handleLogoutSubmit}>로그아웃</button>
+        <div className="chat-page">
+            <div className='sidebar'>
+                <div className='search-bar'>
+                    <input
+                        type='text'
+                        value={searchRoom}
+                        onChange={(e) => setSearchRoom(e.target.value)}
+                        placeholder='찾을 방'
+                    />
+                    <button onClick={handleSearchRoom}>🔍</button>
+                </div>
+                {!roomExists && (
+                    <div className="room-not-found">
+                        <p>해당 방이 존재하지 않습니다. 방을 개설하시겠습니까?</p>
+                        <button onClick={handleCreateRoom}>O</button>
+                        <button onClick={() => setRoomExists(true)}>X</button>
+                    </div>
+                )}
+                <ul className="room-list">
+                    {rooms.map((room, index) => (
+                        <li key={index}>
+                            <button onClick={() => handleJoinRoom(room)}>{room}</button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            <div className='chat-container'>
+                <React.Fragment>
+                    <h3>{currentRoom ? currentRoom : "채팅방을 선택하세요"}</h3>
+                    <MessageList messages={messages} currentUser={user} />
+                    <MessageForm onMessageSubmit={handleMessageSubmit} user={user} disabled={!currentRoom} />
+                </React.Fragment>
             </div>
         </div>
     );
